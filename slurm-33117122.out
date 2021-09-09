@@ -1,0 +1,40 @@
+      wants         loaded
+ [1,] "tidyverse"   TRUE  
+ [2,] "data.table"  TRUE  
+ [3,] "fst"         TRUE  
+ [4,] "fixest"      TRUE  
+ [5,] "rio"         TRUE  
+ [6,] "glue"        TRUE  
+ [7,] "fastDummies" TRUE  
+ [8,] "janitor"     TRUE  
+ [9,] "tictoc"      TRUE  
+[10,] "patchwork"   TRUE  
+[11,] "lubridate"   TRUE  
+[12,] "cobalt"      TRUE  
+[13,] "IRdisplay"   TRUE  
+[14,] "tictoc"      TRUE  
+[15,] "doMC"        TRUE  
+[16,] "RPushbullet" TRUE  
+[17,] "grf"         TRUE  
+[18,] "DoubleML"    TRUE  
+[19,] "rlearner"    TRUE  
+[20,] "glmnet"      TRUE  
+107.113 sec elapsed
+311.209 sec elapsed
+ATE: 0.007511ATE: 0.003249Warning messages:
+1: In as.data.table.list(x, keep.rownames = keep.rownames, check.names = check.names,  :
+  Item 1 has 164 rows but longest item has 327; recycled with remainder.
+2: In as.data.table.list(x, keep.rownames = keep.rownames, check.names = check.names,  :
+  Item 2 has 164 rows but longest item has 327; recycled with remainder.
+             var  est1   est2
+  1:     nos_896 0.015  0.012
+  2:     nos_896 0.015  0.003
+  3:    office_5 0.010  0.008
+  4:    office_5 0.010 -0.005
+  5:     nos_196 0.009  0.006
+ ---                         
+138:     nos_892 0.001  0.003
+139:     nos_894 0.001  0.011
+140:     nos_990 0.001  0.002
+141: residenc_43 0.001  0.005
+142: residenc_55 0.001  0.002

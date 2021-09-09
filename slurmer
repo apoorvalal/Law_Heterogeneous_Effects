@@ -1,0 +1,14 @@
+#!/bin/bash
+#
+#SBATCH --job-name=law_rlasso_fit
+#SBATCH --begin=now
+#SBATCH --time=6:00:00
+#SBATCH --partition=hns
+#SBATCH --mem=32G
+#SBATCH --ntasks-per-node=16
+#SBATCH --mail-type=ALL
+
+## Insert the command to run below. Here, we're just storing the date in a
+## cron.log file
+# some script here
+Rscript 2_rlearner.R

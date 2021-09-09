@@ -1,0 +1,461 @@
+---
+title: Motivated Reasoning Regressions
+description: |
+  Estimating the average and heterogeneous effects of judicial partisan affiliation on decisions
+author:
+  - name: Apoorva Lal
+    affiliation: Stanford
+    url: http://apoorvalal.github.io/
+date: "`r Sys.Date()`"
+output:
+  distill::distill_article:
+    toc: true
+    toc_depth: 2
+    self_contained: true
+    code_folding: true
+backend: biber
+bibliography: /home/alal/Dropbox/MyLibrary2.bib
+---
+
+
+<!--- For HTML renders - selection from math_shortcuts.tex --->
+`r if (!knitr:::is_latex_output()) '
+$\\DeclareMathOperator*{\\argmin}{argmin}$
+$\\newcommand{\\var}{\\mathrm{Var}}$
+$\\newcommand{\\epsi}{\\varepsilon}$
+$\\newcommand{\\phii}{\\varphi}$
+$\\newcommand\\Bigpar[1]{\\left( #1 \\right )}$
+$\\newcommand\\Bigbr[1]{\\left[ #1 \\right ]}$
+$\\newcommand\\Bigcr[1]{\\left\\{ #1 \\right \\}}$
+$\\newcommand\\SetB[1]{\\left\\{ #1 \\right\\}}$
+$\\newcommand\\Sett[1]{\\mathcal{#1}}$
+$\\newcommand{\\Data}{\\mathcal{D}}$
+$\\newcommand{\\Ubr}[2]{\\underbrace{#1}_{\\text{#2}}}$
+$\\newcommand{\\Obr}[2]{ \\overbrace{#1}^{\\text{#2}}}$
+$\\newcommand{\\sumiN}{\\sum_{i=1}^N}$
+$\\newcommand{\\dydx}[2]{\\frac{\\partial #1}{\\partial #2}}$
+$\\newcommand\\Indic[1]{\\mathds{1}_{#1}}$
+$\\newcommand{\\Realm}[1]{\\mathbb{R}^{#1}}$
+$\\newcommand{\\Exp}[1]{\\mathbb{E}\\left[#1\\right]}$
+$\\newcommand{\\Expt}[2]{\\mathbb{E}_{#1}\\left[#2\\right]}$
+$\\newcommand{\\Var}[1]{\\mathbb{V}\\left[#1\\right]}$
+$\\newcommand{\\Covar}[1]{\\text{Cov}\\left[#1\\right]}$
+$\\newcommand{\\Prob}[1]{\\mathbf{Pr}\\left(#1\\right)}$
+$\\newcommand{\\Supp}[1]{\\text{Supp}\\left[#1\\right]}$
+$\\newcommand{\\doyx}{\\Prob{Y \\, |\\,\\mathsf{do} (X = x)}}$
+$\\newcommand{\\doo}[1]{\\Prob{Y |\\,\\mathsf{do} (#1) }}$
+$\\newcommand{\\R}{\\mathbb{R}}$
+$\\newcommand{\\Z}{\\mathbb{Z}}$
+$\\newcommand{\\wh}[1]{\\widehat{#1}} % Wide hat$
+$\\newcommand{\\wt}[1]{\\widetilde{#1}} % Wide tilde$
+$\\newcommand{\\wb}[1]{\\overline{#1}} % Wide bar$
+$\\newcommand\\Ol[1]{\\overline{#1}}$
+$\\newcommand\\Ul[1]{\\underline{#1}}$
+$\\newcommand\\Str[1]{#1^{*}}$
+$\\newcommand{\\F}{\\mathsf{F}}$
+$\\newcommand{\\ff}{\\mathsf{f}}$
+$\\newcommand{\\Cdf}[1]{\\mathbb{F}\\left(#1\\right)}$
+$\\newcommand{\\Cdff}[2]{\\mathbb{F}_{#1}\\left(#2\\right)}$
+$\\newcommand{\\Pdf}[1]{\\mathsf{f}\\left(#1\\right)}$
+$\\newcommand{\\Pdff}[2]{\\mathsf{f}_{#1}\\left(#2\\right)}$
+$\\newcommand{\\dd}{\\mathsf{d}}$
+$\\newcommand\\Normal[1]{\\mathcal{N} \\left( #1 \\right )}$
+$\\newcommand\\Unif[1]{\\mathsf{U} \\left[ #1 \\right ]}$
+$\\newcommand\\Bern[1]{\\mathsf{Bernoulli} \\left( #1 \\right )}$
+$\\newcommand\\Binom[1]{\\mathsf{Bin} \\left( #1 \\right )}$
+$\\newcommand\\Pois[1]{\\mathsf{Poi} \\left( #1 \\right )}$
+$\\newcommand\\BetaD[1]{\\mathsf{Beta} \\left( #1 \\right )}$
+$\\newcommand\\Diri[1]{\\mathsf{Dir} \\left( #1 \\right )}$
+$\\newcommand\\Gdist[1]{\\mathsf{Gamma} \\left( #1 \\right )}$
+$\\def\\mbf#1{\\mathbf{#1}}$
+$\\def\\mrm#1{\\mathrm{#1}}$
+$\\def\\mbi#1{\\boldsymbol{#1}}$
+$\\def\\ve#1{\\mbi{#1}} % Vector notation$
+$\\def\\vee#1{\\mathbf{#1}} % Vector notation$
+$\\newcommand{\\Mat}[1]{\\mathbf{#1}}$
+$\\newcommand{\\eucN}[1]{\\norm{#1}}$
+$\\newcommand{\\lzero}[1]{\\norm{#1}_0}$
+$\\newcommand{\\lone}[1]{\\norm{#1}_1}$
+$\\newcommand{\\ltwo}[1]{\\norm{#1}_2}$
+$\\newcommand{\\pnorm}[1]{\\norm{#1}_p}$
+'`
+
+
+<!--
+########     ###    ########  ######## ########
+##     ##   ## ##   ##     ## ##       ##     ##
+##     ##  ##   ##  ##     ## ##       ##     ##
+########  ##     ## ########  ######   ########
+##        ######### ##        ##       ##   ##
+##        ##     ## ##        ##       ##    ##
+##        ##     ## ##        ######## ##     ##
+-->
+
+```{r global_options}
+# %% ####################################################
+rm(list = ls())
+library(LalRUtils)
+LalRUtils::libreq(tidyverse, data.table, fst, fixest, rio, glue, fastDummies,
+                  janitor, tictoc, patchwork, lubridate, cobalt, modelsummary,
+                  IRdisplay, knitr, rmarkdown, kableExtra, tictoc, doMC,
+                  # ml/ CI packages
+                  grf, DoubleML, npcausal, rlearner, glmnet
+)
+theme_set(lal_plot_theme()) # add _d() for dark
+options(repr.plot.width=12, repr.plot.height=9)
+options(ggplot2.discrete.fill = RColorBrewer::brewer.pal(9, "Set1"))
+options(ggplot2.discrete.colour = RColorBrewer::brewer.pal(9, "Set1"))
+options(ggplot2.continuous.fill = "viridis"); options(ggplot2.continuous.colour = "viridis")
+options(scipen=999)
+
+set.seed(42)
+chr = function(...) as.character(...) %>% display_html()
+
+
+libreq(knitr, rmarkdown)
+knitr::opts_chunk$set(fig.width=12, fig.height=8, fig.path='Figs/',
+                        echo=TRUE, warning=FALSE, message=FALSE, cache = TRUE)
+
+root = "/home/alal/Desktop/WorldBank/projects/motivatedreasoning-main"
+```
+
+# Data Prep
+
+```{r, eval = F}
+tic()
+df = fread(file.path(root, "scratch/new_cases.csv")) %>% clean_names
+toc()
+
+df[, courtType := case_when(
+  str_detect(tolower(court_name), "circuit") ~  "Circuit",
+  str_detect(tolower(court_name), "appeals") ~  "Appeals",
+  str_detect(tolower(court_name), "district") ~  "District",
+  TRUE ~ court_name
+)]
+dropcols = c('decision_date', 'termdate', 'tapeyear')
+df[, (dropcols) := NULL]
+# subset on outcome
+df = df[judgment %in% c(1, 2)]
+df[, favors_plaintiff := ifelse(judgment == 2, 1, 0)]
+
+
+
+# drop marginal parties
+setnames(df, 'party_of_appointing_president', 'party')
+df = df[party %in% c('Republican', 'Democratic')]
+df[, rep := ifelse(party == "Republican", 1, 0)]
+
+# timestamp
+df[, filing_year := year(filing_date)]
+cat(glue("Missing share: {format(sum(is.na(df$filing_year))/nrow(df), 3)}"))
+
+
+# district year FE
+df[, district_year := .GRP, by =  .(district, filing_year)]
+# number of unique values for covariates
+X = c('classact', 'juris', 'origin', 'office', 'nos', 'residenc')
+df[, (X) := lapply(.SD, function(x) as.factor(x)), .SDcols = X]
+df[, lapply(.SD, nunique), .SDcols = X]
+
+# drop rows with missing
+kvs = c('favors_plaintiff', 'rep',  X, 'district_year', 'district')
+df = df[, ..kvs] %>% na.omit()
+# %% dummy columns
+Xmat = dummy_cols(df[, ..X], select_columns = X, remove_first_dummy = TRUE,
+  remove_selected_columns = TRUE)
+
+data_main = cbind(df[, .(favors_plaintiff, rep, district, district_year)], Xmat)
+fwrite(data_main, file.path(root, "scratch/prepped_data.csv"))
+cat("Tabulations of categorical variables")
+summary(df[, ..X])
+```
+
+## Covariate descriptions
+
++ `classact`: Involves an allegation by the plaintiff that the complaint meets the prerequisites of a ”Class Action” as provided in Rule 23 - F.R.CV.P.
++ `juris`: The code which provides the basis for the U.S. district court jurisdiction in the case. This code is used in conjunction with appropriate nature of suit code.
++ `origin`: A single digit code describing the manner in which the case was filed in the district
++ `office`: The code that designates the office within the district where the case is filed
++ `nos`: Nature of Suit: A 3 digit statistical code representing the nature of the action filed
++ `residenc`: Involves diversity of citizenship for the plaintiff and defendant.  First position is the citizenship of the plaintiff, second position is the citizenship of the defendant
+
+## Partialling out block indicators
+
+Judges are randomly assigned within district-year, so the essentially
+serve as randomisation blocks. We partial them out of the treatment,
+outcome, and covariates before subsequent analysis.
+
+```{r, eval = FALSE}
+partialer = function(v, fitted = F){
+  # subset dataframe
+  kv = c(v, 'district_year'); dat = data_main[, ..kv]
+  f = formula_fixest(v, X = "1", D = "district_year")
+  m = feols(f, data = dat)
+  if (fitted == F){
+    return(m$residuals)
+  } else{
+    return(m$fitted.values)
+  }
+}
+
+# residualise treatment and outcome
+resid_y  = partialer('favors_plaintiff')
+resid_d  = partialer('rep')
+
+# residualise covariates
+tic()
+Xvars = colnames(Xmat)
+resid_X = map(Xvars, partialer)
+toc()
+
+# construct dataframe partialled out
+resid_X = resid_X  %>% setDT
+resid_df = cbind(resid_y, resid_d, resid_X, data_main$district)
+setnames(resid_df, c("y", "d", c(colnames(Xmat), 'district')))
+resid_df %>% glimpse
+
+save(resid_df, data_main, file = file.path(root, "scratch/residualised_data.RData"))
+
+# prep for Rlearner - fit nuisance functions
+
+fitted_y  = partialer('favors_plaintiff', T)
+fitted_d  = partialer('rep', T)
+
+big_df2 = data.table(
+  y = data_main[['favors_plaintiff']],
+  w = data_main[['rep']],
+  fitted_y,
+  fitted_d,
+  data_main[, ..Xvars]
+)
+
+save(big_df2, file = file.path(root, "scratch/wide_df_rlearner.RData"))
+```
+
+
+# Estimation
+
+## ATE
+
+Since we have partialled out block-FEs from the treatment and outcome,
+we can estimate the average treatment effect by linear regression.
+
+
+```{r}
+load(file.path(root, "scratch/residualised_data.RData"))
+m0 = feols(y ~ d-1, data = resid_df, cluster = ~district)
+etable(m0)
+```
+
+
+## Partial Linear Regression
+
+To account for residual confounding from covariates, we also estimate
+the following partial linear regression
+
+$$
+\begin{aligned}
+Y=& D \theta_{0}+g_{0}(X)+\zeta, & \mathbb{E}(\zeta \mid D, X) =0 \\
+D=& m_{0}(X)+V,                  & \mathbb{E}(V \mid X) =0
+\end{aligned}
+$$
+
+where $X$ are covariates. We estimate $g$ and $m$ using regularized
+regression (LASSO) and use sample-splitting.
+
+```{r, eval=FALSE}
+load(file.path(root, "scratch/residualised_data.RData"))
+dml_data = DoubleMLData$new(resid_df,
+                             y_col = "y",
+                             d_cols = "d",
+                             x_cols = colnames(Xmat))
+dml_data
+library(mlr3)
+library(mlr3learners)
+# surpress messages from mlr3 package during fitting
+lgr::get_logger("mlr3")$set_threshold("warn")
+
+# random forest for nuisance functions takes too long
+# learner = lrn("regr.ranger", num.trees=500, max.depth=5, min.node.size=2)
+# lasso
+learner = lrn("regr.glmnet")
+# set to use 4 CPUs
+set_threads(learner, n = 4)
+ml_g_bonus = learner$clone()
+ml_m_bonus = learner$clone()
+set.seed(94305)
+dml_1 = DoubleMLPLR$new(dml_data, ml_g=ml_g_bonus, ml_m=ml_m_bonus)
+dml_1$fit()
+dml_1$summary()
+
+save(dml_1, file = file.path(root, "scratch/plr1.RData"))
+```
+
+```
+[1] "Estimates and significance testing of the effect of target\n                variables"
+  Estimate. Std. Error t value Pr(>|t|)
+d  0.009109   0.000813    11.2   <2e-16 ***
+---
+Signif. codes:  0 ‘***’ 0.001 ‘**’ 0.01 ‘*’ 0.05 ‘.’ 0.1 ‘ ’ 1
+```
+
+Estimates from the simple regression and regression adjustment are
+both on the order of 1 percentage point.
+
+## Heterogeneous Effects
+
+```{r}
+load(file.path(root, "scratch/residualised_data.RData"))
+dt_samp = data_main[sample(1:nrow(data_main), 1e5)]
+
+Y = dt_samp[['favors_plaintiff']]
+W = dt_samp[['rep']]
+district_id = dt_samp[['district']] %>% as.factor %>%  as.numeric
+X = dt_samp %>% .[, 5:ncol(.)] %>% remove_constant %>% as.matrix()
+dyDummies = model.matrix(~ -1 + as.factor(district_year), dt_samp)
+```
+
+### causal forest
+
+```{r, eval = F}
+# residualise on district X year FEs
+Y.forest = regression_forest(dyDummies, Y, clusters = district_id)
+W.forest = regression_forest(dyDummies, W, clusters = district_id)
+Y.hat = predict(Y.forest)$predictions
+W.hat = predict(W.forest)$predictions
+
+# causal forest takes orthogonalized fitted values
+cf0 = causal_forest(X, Y, W,
+                       Y.hat = Y.hat, W.hat = W.hat,
+                       clusters = district_id)
+
+# causal forest takes orthogonalized fitted values
+cf_raw = causal_forest(X, Y, W,
+                       Y.hat = Y.hat, W.hat = W.hat,
+                       clusters = district_id)
+varimp = variable_importance(cf_raw)
+selected= which(varimp > mean(varimp))
+
+# causal forest takes orthogonalized fitted values
+cf0 = causal_forest(X[, selected], Y, W,
+                       Y.hat = Y.hat, W.hat = W.hat,
+                       clusters = district_id)
+
+save(cf0, file = file.path(root, "scratch/causal_forest_fit.rdata"))
+```
+
+```{r}
+load(file.path(root, "scratch/causal_forest_fit.rdata"))
+```
+
+```{r}
+average_treatment_effect(cf0)
+oob_pred <- predict(cf0)
+oob_tauhat_cf <- oob_pred$predictions
+hist(oob_tauhat_cf, main="Causal forests: out-of-bag CATE",
+  col = "cornflowerblue", las = 1)
+```
+
+#### omnibus test
+
+```{r, eval = F}
+tic()
+tc <- test_calibration(cf0)
+toc()
+save(tc, file = file.path(root, "scratch/omnibus.RData"))
+```
+
+```{r}
+load(file.path(root, "scratch/omnibus.RData"))
+caption <- "Best linear fit using forest predictions (on held-out data)
+                      as well as the mean forest prediction as regressors, along
+                      with heteroskedasticity-robust (HC3) SEs."
+table <- as.data.frame(tc[,])
+table %>%
+    kable(format="html", digits=6, caption=caption, escape = FALSE, row.names = FALSE) %>%
+    kable_styling(bootstrap_options=c("condensed", "responsive"), full_width=FALSE)
+```
+
+
+#### Variable importance in causal forest
+
+```{r, results = 'asis'}
+var_imp <- c(variable_importance(cf0))
+names(var_imp) <- colnames(cf0$X.orig)
+sorted_var_imp <- sort(var_imp, decreasing=TRUE)
+as.data.frame(sorted_var_imp, row.names = names(sorted_var_imp)) %>%
+  slice(1:10) %>%
+  kable("html", digits = 4, row.names = T) %>%
+  kable_styling(bootstrap_options=c("striped", "hover", "condensed", "responsive"), full_width=FALSE)
+```
+
+#### Best Linear Predictor of CATEs
+
+
+```{r}
+best_linear_projection(cf0, cf0$X.orig)
+```
+
+### R-Learner
+
+Nie-Wager (2020).
+
+We first fit nuisance functions ($\wh{m}, \wh{e}$) with fixed-effects with cross-fitting. We then use these as inputs into the problem of learning
+
+$$
+\hat{\tau}(\cdot) = \argmin_\tau \Bigpar{\wh{L}_n{\tau(\cdot)} + \Lambda_n{\tau(\cdot)} }
+$$
+
+where
+$$
+\wh{L}\Bigpar{\tau(\cdot)} = \frac{1}{n} \sumiN \Bigpar{
+  \Bigpar{Y_i - \wh{m}^{-q(i)} (X_i) } -
+  \Bigpar{W_i - \wh{e}^{-q(i)} (X_i)}
+}^2
+$$
+
+where the second piece is called R-loss (after Robinson regression).
+
+```{r}
+load(file.path(root, "scratch/wide_df_rlearner.RData"))
+df2 = big_df2 #[sample(.N, 1e5)]
+y    = df2[['y']]
+mhat = df2[['fitted_y']]
+w    = df2[['w']]
+what = df2[['fitted_d']]
+X = df2[, 5:ncol(df2)] %>% remove_constant() %>% as.matrix()
+```
+
+```{r, eval = F}
+tic()
+tau_lasso = rlasso(X, w, y, p_hat = what, m_hat = mhat)
+toc()
+
+tic()
+tau_lasso2 = rlasso(X, w, y, p_hat = what, m_hat = mhat, rs = T)
+toc()
+
+save(tau_lasso, tau_lasso2, file = file.path(root, "scratch/rlasso_fit.RData"))
+```
+
+
+
+```{r}
+load(file.path(root, "scratch/rlasso_fit.RData"))
+# fit_df = data.frame(tau1 = predict(tau_lasso, X),  tau2 = predict(tau_lasso2, X))
+cat("ATE:", mean(tau_lasso$tau_hat))
+cat("ATE:", mean(tau_lasso2$tau_hat))
+
+coefs = data.table(var = c("intercept", colnames(X)), est1 = round(tau_lasso$tau_beta, 3),
+  est2 = round(tau_lasso2$tau_beta, 3))
+
+coefs[order(-abs(est1))][est1>0]
+```
+
+
+[NOS reference](https://pacer.uscourts.gov/sites/default/files/files/nature%20of%20suit%20codes.pdf)
+
+
++ `nos_196`: Franchise Action
++ `nos_444`: Welfare
++ `residenc_62`: suits involving immigrants?

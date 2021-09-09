@@ -1,0 +1,29 @@
+      wants         loaded
+ [1,] "tidyverse"   TRUE  
+ [2,] "data.table"  TRUE  
+ [3,] "fst"         TRUE  
+ [4,] "glue"        TRUE  
+ [5,] "fastDummies" TRUE  
+ [6,] "janitor"     TRUE  
+ [7,] "tictoc"      TRUE  
+ [8,] "lubridate"   TRUE  
+ [9,] "IRdisplay"   TRUE  
+[10,] "doMC"        TRUE  
+[11,] "RPushbullet" TRUE  
+[12,] "grf"         TRUE  
+[13,] "DoubleML"    TRUE  
+[14,] "rlearner"    TRUE  
+[15,] "glmnet"      TRUE  
+ATE basicestimate  std.err 
+0.008664 0.006661 
+ATE parsimoniousestimate  std.err 
+0.008664 0.006661 
+Calibration
+Best linear fit using forest predictions (on held-out data)
+as well as the mean forest prediction as regressors, along
+with one-sided heteroskedasticity-robust (HC3) SEs:
+
+                               Estimate Std. Error t value Pr(>t)
+mean.forest.prediction          1.46829    1.15966    1.27   0.10
+differential.forest.prediction -0.00553    0.15328   -0.04   0.51
+
